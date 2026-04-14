@@ -65,14 +65,16 @@ class FlightComponent(BaseComponent):
                 return
         raise TimeoutError(f"Vehicle did not reach {altitude_m}m within {timeout}s")
 
-    def land(self, timeout: int = 30) -> None:
+    _LANDED_ALTITUDE_THRESHOLD_M = 0.3
+
+    def land(self, timeout: int = 60) -> None:
         self.set_mode("LAND")
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            msg = self._mav.recv_match(type="HEARTBEAT", blocking=True, timeout=2)
-            if msg and not bool(msg.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED):
+            msg = self._mav.recv_match(type="GLOBAL_POSITION_INT", blocking=True, timeout=2)
+            if msg and msg.relative_alt / 1000.0 < self._LANDED_ALTITUDE_THRESHOLD_M:
                 return
-        raise TimeoutError(f"Vehicle did not land and disarm within {timeout}s")
+        raise TimeoutError(f"Vehicle did not land within {timeout}s")
 
     def _send_arm_disarm(self, arm: bool, timeout: int, force: bool = False) -> None:
         self._mav.mav.command_long_send(

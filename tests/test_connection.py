@@ -28,16 +28,13 @@ def test_pre_arm_check(vehicle):
     assert vehicle.attitude.is_level(), "Pitch or roll is too high"
 
 
-def test_arm_vehicle(vehicle):
+def test_arm_vehicle(guided_vehicle):
     """Verify the vehicle can be armed."""
-    vehicle.flight.wait_for_ready_to_arm()
-    vehicle.flight.set_mode("GUIDED")
-    vehicle.flight.arm()
-    assert vehicle.status.is_armed(), "Vehicle did not arm"
+    guided_vehicle.flight.arm()
+    assert guided_vehicle.status.is_armed(), "Vehicle did not arm"
 
 
-def test_disarm_vehicle(vehicle):
+def test_disarm_vehicle(armed_vehicle):
     """Verify the vehicle can be disarmed."""
-    assert vehicle.status.is_armed(), "Vehicle is not armed"
-    vehicle.flight.disarm(force=True)
-    assert not vehicle.status.is_armed(), "Vehicle did not disarm"
+    armed_vehicle.flight.disarm(force=True)
+    assert not armed_vehicle.status.is_armed(), "Vehicle did not disarm"

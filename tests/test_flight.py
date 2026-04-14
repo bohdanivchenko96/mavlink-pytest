@@ -1,10 +1,8 @@
-def test_take_height(vehicle):
-    """Verify the vehicle can take off to 10m and land autonomously."""
-    vehicle.flight.wait_for_ready_to_arm()
-    vehicle.flight.set_mode("GUIDED")
-    vehicle.flight.arm()
-    vehicle.flight.takeoff(altitude_m=20)
+def test_take_height(armed_vehicle):
+    """Verify the vehicle can take off to 20m."""
+    armed_vehicle.flight.takeoff(altitude_m=20)
 
-    assert vehicle.gps.altitude() >= 19 and vehicle.gps.altitude() <= 21, (
-        f"Expected 20m altitude +/- 1m , got {vehicle.gps.altitude():.1f}m"
-    )
+    altitude = armed_vehicle.gps.altitude()
+    assert 19 <= altitude <= 21, f"Expected 20m altitude ±1m, got {altitude:.1f}m"
+
+    armed_vehicle.flight.land()

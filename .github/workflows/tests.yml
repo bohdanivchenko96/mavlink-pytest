@@ -13,12 +13,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Start ArduCopter SITL
-        run: docker run -d --rm --platform linux/amd64 -p 5760:5760 radarku/ardupilot-sitl
-
-      - name: Wait for SITL to be ready
-        run: sleep 45
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -27,8 +21,27 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Start ArduCopter SITL
+        run: docker run -d --rm --platform linux/amd64 -p 5760:5760 radarku/ardupilot-sitl
+
+      - name: Wait for SITL to be ready
+        run: python scripts/wait_for_sitl.py
+
       - name: Run tests
         run: pytest -v --junit-xml=report.xml
+
+      - name: Collect SITL logs on failure
+        if: failure()
+        run: docker logs $(docker ps -q --filter ancestor=radarku/ardupilot-sitl) > sitl.log 2>&1 || true
+
+      - name: Upload artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: failure-artifacts
+          path: |
+            report.xml
+            sitl.log
 
       - name: Publish test report
         uses: dorny/test-reporter@v1
