@@ -14,7 +14,7 @@ jobs:
         run: docker run -d --rm --platform linux/amd64 -p 5760:5760 radarku/ardupilot-sitl
 
       - name: Wait for SITL to be ready
-        run: sleep 30
+        run: sleep 45
 
       - name: Set up Python
         uses: actions/setup-python@v4

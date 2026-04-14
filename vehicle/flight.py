@@ -21,24 +21,35 @@ class FlightComponent(BaseComponent):
     def arm(self, timeout: int = 10) -> None:
         self._send_arm_disarm(arm=True, timeout=timeout)
 
-    def disarm(self, timeout: int = 10) -> None:
-        self._send_arm_disarm(arm=False, timeout=timeout)
+    def disarm(self, force: bool = False, timeout: int = 10) -> None:
+        self._send_arm_disarm(arm=False, timeout=timeout, force=force)
 
-    def wait_for_ready_to_arm(self, timeout: int = 30, required_stable_readings: int = 5) -> None:
-        """Wait until GPS fix is stable across consecutive readings."""
-        stable = 0
+    # EKF must report attitude + horizontal velocity + horizontal/vertical position
+    _EKF_REQUIRED_FLAGS = 0x003B
+
+    def wait_for_ready_to_arm(self, timeout: int = 60, required_stable_readings: int = 5) -> None:
+        """Wait until GPS fix is stable and EKF has finished its GPS checks."""
+        gps_stable = 0
+        ekf_ready = False
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
-            msg = self._mav.recv_match(type="GPS_RAW_INT", blocking=True, timeout=2)
-            if msg and msg.fix_type >= 3 and msg.satellites_visible >= 6:
-                stable += 1
-                if stable >= required_stable_readings:
-                    return
-            else:
-                stable = 0
+            msg = self._mav.recv_match(
+                type=["GPS_RAW_INT", "EKF_STATUS_REPORT"], blocking=True, timeout=2
+            )
+            if msg is None:
+                continue
+            if msg.get_type() == "GPS_RAW_INT":
+                if msg.fix_type >= 3 and msg.satellites_visible >= 6:
+                    gps_stable += 1
+                else:
+                    gps_stable = 0
+            elif msg.get_type() == "EKF_STATUS_REPORT":
+                ekf_ready = (msg.flags & self._EKF_REQUIRED_FLAGS) == self._EKF_REQUIRED_FLAGS
+            if gps_stable >= required_stable_readings and ekf_ready:
+                return
         raise TimeoutError(f"Vehicle did not become ready to arm within {timeout}s")
 
-    def takeoff(self, altitude_m: float, timeout: int = 30) -> None:
+    def takeoff(self, altitude_m: float, timeout: int = 60) -> None:
         self._mav.mav.command_long_send(
             self._mav.target_system,
             self._mav.target_component,
@@ -63,14 +74,15 @@ class FlightComponent(BaseComponent):
                 return
         raise TimeoutError(f"Vehicle did not land and disarm within {timeout}s")
 
-    def _send_arm_disarm(self, arm: bool, timeout: int) -> None:
+    def _send_arm_disarm(self, arm: bool, timeout: int, force: bool = False) -> None:
         self._mav.mav.command_long_send(
             self._mav.target_system,
             self._mav.target_component,
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             0,
             1 if arm else 0,
-            0, 0, 0, 0, 0, 0,
+            21196 if force else 0,  # 21196 = force arm/disarm magic number
+            0, 0, 0, 0, 0,
         )
 
         # Collect all messages until COMMAND_ACK arrives, capturing any

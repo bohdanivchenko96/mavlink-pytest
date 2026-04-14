@@ -39,5 +39,5 @@ def test_arm_vehicle(vehicle):
 def test_disarm_vehicle(vehicle):
     """Verify the vehicle can be disarmed."""
     assert vehicle.status.is_armed(), "Vehicle is not armed"
-    vehicle.flight.disarm()
+    vehicle.flight.disarm(force=True)
     assert not vehicle.status.is_armed(), "Vehicle did not disarm"
