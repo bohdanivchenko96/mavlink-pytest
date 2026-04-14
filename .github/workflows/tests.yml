@@ -9,6 +9,12 @@ jobs:
       checks: write
       contents: read
 
+    services:
+      sitl:
+        image: radarku/ardupilot-sitl
+        ports:
+          - 5760:5760
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -21,14 +27,15 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Start ArduCopter SITL
-        run: docker run -d --rm --platform linux/amd64 -p 5760:5760 radarku/ardupilot-sitl
-
       - name: Wait for SITL to be ready
         run: python scripts/wait_for_sitl.py
+        env:
+          MAVLINK_CONN: tcp:localhost:5760
 
       - name: Run tests
         run: pytest -v --junit-xml=report.xml
+        env:
+          MAVLINK_CONN: tcp:localhost:5760
 
       - name: Collect SITL logs on failure
         if: failure()

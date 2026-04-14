@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 
@@ -7,7 +8,7 @@ MAX_WAIT_S = 60
 RETRY_INTERVAL_S = 2
 
 
-def wait_for_sitl(host: str = "tcp:localhost:5760") -> None:
+def wait_for_sitl(host: str) -> None:
     deadline = time.monotonic() + MAX_WAIT_S
     while time.monotonic() < deadline:
         try:
@@ -24,4 +25,4 @@ def wait_for_sitl(host: str = "tcp:localhost:5760") -> None:
 
 
 if __name__ == "__main__":
-    wait_for_sitl()
+    wait_for_sitl(os.environ.get("MAVLINK_CONN", "tcp:localhost:5760"))

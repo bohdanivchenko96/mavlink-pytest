@@ -1,12 +1,16 @@
+import os
+
 import pytest
 from pymavlink import mavutil
 
 from vehicle import Vehicle
 
+_MAVLINK_CONN = os.environ.get("MAVLINK_CONN", "tcp:localhost:5760")
+
 
 @pytest.fixture(scope="session")
 def vehicle() -> Vehicle:
-    connection = mavutil.mavlink_connection("tcp:localhost:5760")
+    connection = mavutil.mavlink_connection(_MAVLINK_CONN)
     connection.wait_heartbeat(timeout=30)
     connection.mav.request_data_stream_send(
         connection.target_system,
