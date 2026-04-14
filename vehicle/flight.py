@@ -79,7 +79,10 @@ class FlightComponent(BaseComponent):
                 continue
             if msg.get_type() == "STATUSTEXT":
                 status_texts.append(msg.text.strip())
-            elif msg.get_type() == "COMMAND_ACK":
+            elif (
+                msg.get_type() == "COMMAND_ACK"
+                and msg.command == mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM
+            ):
                 ack = msg
                 break
 
