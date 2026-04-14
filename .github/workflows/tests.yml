@@ -1,0 +1,28 @@
+name: MAVLink Tests
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Start ArduCopter SITL
+        run: docker run -d --rm --platform linux/amd64 -p 5760:5760 radarku/ardupilot-sitl
+
+      - name: Wait for SITL to be ready
+        run: sleep 15
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        run: pytest -v
