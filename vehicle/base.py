@@ -19,5 +19,6 @@ class BaseComponent:
 
     def _recv(self, msg_type: str, timeout: int = 5):
         msg = self._mav.recv_match(type=msg_type, blocking=True, timeout=timeout)
-        assert msg is not None, f"{msg_type} not received — is data streaming enabled?"
+        if msg is None:
+            raise TimeoutError(f"{msg_type} not received within {timeout}s — is data streaming enabled?")
         return msg

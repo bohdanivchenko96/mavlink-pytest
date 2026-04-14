@@ -17,7 +17,8 @@ class Vehicle:
 
     def receive_heartbeat(self, timeout: int = 5):
         msg = self._mav.recv_match(type="HEARTBEAT", blocking=True, timeout=timeout)
-        assert msg is not None, "No heartbeat received — is ArduCopter running?"
+        if msg is None:
+            raise TimeoutError("No heartbeat received — is ArduCopter running?")
         return msg
 
     def vehicle_type(self) -> str:
